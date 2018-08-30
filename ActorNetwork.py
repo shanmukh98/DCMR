@@ -1,10 +1,10 @@
 import numpy as np
 import math
-from keras.initializations import normal, identity
+from keras.initializers import normal, identity
 from keras.models import model_from_json
 from keras.models import Sequential, Model
-from keras.engine.training import collect_trainable_weights
-from keras.layers import Dense, Flatten, Input, merge, Lambda
+# from keras.engine.training import scollect_trainable_weight
+from keras.layers import *
 from keras.optimizers import Adam
 import tensorflow as tf
 import keras.backend as K
@@ -45,13 +45,74 @@ class ActorNetwork(object):
 
     def create_actor_network(self, state_size,action_dim):
         print("Now we build the model")
-        S = Input(shape=[state_size])   
-        h0 = Dense(HIDDEN1_UNITS, activation='relu')(S)
-        h1 = Dense(HIDDEN2_UNITS, activation='relu')(h0)
-        Steering = Dense(1,activation='tanh',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1)  
-        Acceleration = Dense(1,activation='sigmoid',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1)   
-        Brake = Dense(1,activation='sigmoid',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1) 
-        V = merge([Steering,Acceleration,Brake],mode='concat')          
-        model = Model(input=S,output=V)
-        return model, model.trainable_weights, S
+        pos_1 = Input(shape=(7,))
+        pos_2 = Input(shape=(7,))
+        vel_1 = Input(shape=(6,))
+        vel_2 = Input(shape=(6,))
+        img_1 = Input(shape=(256,256,3))
+
+        img = BatchNormalization()(img_1)
+        img = Conv2D(16,activation="relu",kernel_size=(5,5),strides=(2,2))(img)
+
+        img = Conv2D(32,activation="relu",kernel_size=(3,3),strides=(2,2))(img)
+        img = Conv2D(64,activation="relu",kernel_size=(3,3))(img)
+        img = BatchNormalization()(img)
+
+
+        img = Conv2D(64,activation="relu",kernel_size=(3,3),strides=(2,2))(img)
+        img = Conv2D(64,activation="relu",kernel_size=(3,3))(img)
+        img = BatchNormalization()(img)
+
+
+        img = Conv2D(64,activation="relu",kernel_size=(3,3),strides=(2,2))(img)
+        img = Conv2D(64,activation="relu",kernel_size=(3,3))(img)
+        img = BatchNormalization()(img)
+
+
+        img = Conv2D(128,activation="relu",kernel_size=(3,3),strides=(2,2))(img)
+        img = Conv2D(128,activation="relu",kernel_size=(3,3))(img)
+        img = BatchNormalization()(img)
+
+        img = Flatten()(img)
+
+
+
+
+
+        state = concatenate([pos_1,pos_2,vel_1,vel_2])
+
+        state = Dense(32,activation="relu")(state)
+        state = BatchNormalization()(state)
+
+        state = Dropout(0.25)(state)
+        state = Dense(64,activation="relu")(state)
+
+        x = concatenate([img,state])
+        x = BatchNormalization()(x)
+        x = Dense(128 , activation="elu")(x)
+        x = Dense(4,activation="linear")(x)
+
+
+
+        # I = Input(shape=)
+        # S = Input(shape=[state_size])
+        # A = Input(shape=[action_dim],name='action2')
+        # w1 = Dense(HIDDEN1_UNITS, activation='relu')(S)
+        # a1 = Dense(HIDDEN2_UNITS, activation='linear')(A)
+        # h1 = Dense(HIDDEN2_UNITS, activation='linear')(w1)
+        # h2 = merge([h1,a1],mode='sum')
+        # h3 = Dense(HIDDEN2_UNITS, activation='relu')(h2)
+        # V = Dense(action_dim, activation='linear')(h3)
+        imp = [pos_1,pos_2,vel_1,vel_2,img_1]
+
+        # S = Input(shape=[state_size])   
+        # h0 = Dense(HIDDEN1_UNITS, activation='relu')(S)
+        # h1 = Dense(HIDDEN2_UNITS, activation='relu')(h0)
+        # Steering = Dense(1,activation='tanh',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1)  
+        # Acceleration = Dense(1,activation='sigmoid',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1)   
+        # Brake = Dense(1,activation='sigmoid',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1) 
+        # V = merge([Steering,Acceleration,Brake],mode='concat')          
+        model = Model(inputs=imp,output=x)
+
+        return model, model.trainable_weights, imp
 

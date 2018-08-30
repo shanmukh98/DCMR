@@ -1,4 +1,4 @@
-from gym_torcs import TorcsEnv
+# from gym_torcs import TorcsEnv
 import numpy as np
 import random
 import argparse
@@ -7,8 +7,9 @@ from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.optimizers import Adam
 import tensorflow as tf
-from keras.engine.training import collect_trainable_weights
+# from keras.engine.training import _collected_trainable_weights
 import json
+import dcmr
 
 from ReplayBuffer import ReplayBuffer
 from ActorNetwork import ActorNetwork
@@ -26,16 +27,16 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
     LRA = 0.0001    #Learning rate for Actor
     LRC = 0.001     #Lerning rate for Critic
 
-    action_dim = 3  #Steering/Acceleration/Brake
+    action_dim = 4  #Steering/Acceleration/Brake
     state_dim = 29  #of sensors input
 
     np.random.seed(1337)
 
-    vision = False
+    # vision = False
 
     EXPLORE = 100000.
-    episode_count = 2000
-    max_steps = 100000
+    episode_count = 20000
+    max_steps = 10000    
     reward = 0
     done = False
     step = 0
@@ -46,6 +47,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
+    # sess = tf.Session()
     from keras import backend as K
     K.set_session(sess)
 
@@ -54,7 +56,8 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
     buff = ReplayBuffer(BUFFER_SIZE)    #Create replay buffer
 
     # Generate a Torcs environment
-    env = TorcsEnv(vision=vision, throttle=True,gear_change=False)
+    # env = TorcsEnv(vision=vision, throttle=True,gear_change=False)
+    envn = dcmr.env("./xmls/two_modules.xml", 0.0001, 0.0001, 60)
 
     #Now load the weight
     print("Now we load the weight")
@@ -68,17 +71,21 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
         print("Cannot find the weight")
 
     print("TORCS Experiment Start.")
+    r = envn.get_renderer()
+
     for i in range(episode_count):
 
         print("Episode : " + str(i) + " Replay Buffer " + str(buff.count()))
 
-        if np.mod(i, 3) == 0:
-            ob = env.reset(relaunch=True)   #relaunch TORCS every 3 episode because of the memory leak error
-        else:
-            ob = env.reset()
+        # if np.mod(i, 3) == 0:
+        #     ob = env.reset(relaunch=True)   #relaunch TORCS every 3 episode because of the memory leak error
+        # else:
+        envn.reset()
+        for i in range(10):
+            envn.step([0,0,0,0])
 
-        s_t = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY,  ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
-     
+        # s_t = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY,  ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
+        s_t  = [np.expand_dims(np.asarray(envn.qpos_1),axis=0),np.expand_dims(np.asarray(envn.qpos_2),axis=0),np.expand_dims(np.asarray(envn.qvel_1),axis=0),np.expand_dims(np.asarray(envn.qvel_2),axis=0),np.expand_dims(np.asarray(envn.view_front[-1]),axis=0)]
         total_reward = 0.
         for j in range(max_steps):
             loss = 0 
@@ -86,7 +93,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             a_t = np.zeros([1,action_dim])
             noise_t = np.zeros([1,action_dim])
             
-            a_t_original = actor.model.predict(s_t.reshape(1, s_t.shape[0]))
+            a_t_original = actor.model.predict(s_t)
             noise_t[0][0] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0],  0.0 , 0.60, 0.30)
             noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.5 , 1.00, 0.10)
             noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1 , 1.00, 0.05)
@@ -100,13 +107,17 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
             a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
 
-            ob, r_t, done, info = env.step(a_t[0])
+            # ob, r_t, done, info = 
+            r_t,done = envn.step(a_t[0])
 
-            s_t1 = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
-        
+            # s_t1 = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
+            s_t1  = [np.expand_dims(np.asarray(envn.qpos_1),axis=0),np.expand_dims(np.asarray(envn.qpos_2),axis=0),np.expand_dims(np.asarray(envn.qvel_1),axis=0),np.expand_dims(np.asarray(envn.qvel_2),axis=0),np.expand_dims(np.asarray(envn.view_front[-1]),axis=0)]
+
             buff.add(s_t, a_t[0], r_t, s_t1, done)      #Add replay buffer
             
             #Do the batch update
+
+            # check this part
             batch = buff.getBatch(BATCH_SIZE)
             states = np.asarray([e[0] for e in batch])
             actions = np.asarray([e[1] for e in batch])
@@ -159,4 +170,4 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
     print("Finish.")
 
 if __name__ == "__main__":
-    playGame()
+    playGame(1)

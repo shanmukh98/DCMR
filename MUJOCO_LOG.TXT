@@ -1,0 +1,9 @@
+Sun Aug 26 19:16:46 2018
+ERROR: Rank-defficient Hessian in HessianDirect
+
+Wed Aug 29 15:56:43 2018
+ERROR: GLEW initalization error: Missing GL version
+
+Thu Aug 30 13:18:28 2018
+ERROR: GLEW initalization error: Missing GL version
+

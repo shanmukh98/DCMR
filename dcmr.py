@@ -88,8 +88,8 @@ class env:
                 self.default_action()
             self.sim.step()
             t += 1
-        # self.view_front.append(self.sim.render(256,256,camera_name="camera_front_1"))
-        # self.view_back.append(self.sim.render(256,256,camera_name="camera_back_2"))
+        self.view_front.append(self.sim.render(256,256,camera_name="camera_front_1"))
+        self.view_back.append(self.sim.render(256,256,camera_name="camera_back_2"))
         if len(self.view_front)>5:
             # del self.view_back[0]
             del self.view_front[0]
@@ -100,7 +100,7 @@ class env:
         self.qvel_1 = self.sim.data.get_joint_qvel("bot_1")
         self.qvel_2 = self.sim.data.get_joint_qvel("bot_2")
         out = self.evaluate()        
-        return out
+        return out,self.joined
 
     def join_action(self):
         ctrl = [-0.003,-0.003,-0.005,0.01,-0.01]
