@@ -23,9 +23,12 @@ class env:
         self.view_back = []
         self.qpos_1 = self.sim.data.get_joint_qpos("bot_1")
         self.qpos_2 = self.sim.data.get_joint_qpos("bot_2")
+        self.qvel_1 = self.sim.data.get_joint_qvel("bot_1")
+        self.qvel_2 = self.sim.data.get_joint_qvel("bot_2")
         self.time = 0
         self.episode_time = episode_time
         self.episode_state = 0
+        self.joined = 0
         return
 
     def get_renderer(self):
@@ -36,9 +39,12 @@ class env:
         self.view_front = []
         self.view_back = []
         self.time = 0
+        self.joined = 0
         self.sim.reset()
         self.qpos_1 = self.sim.data.get_joint_qpos("bot_1")
         self.qpos_2 = self.sim.data.get_joint_qpos("bot_2")
+        self.qvel_1 = self.sim.data.get_joint_qvel("bot_1")
+        self.qvel_2 = self.sim.data.get_joint_qvel("bot_2")
         return
 
     def randomize(self):
@@ -51,6 +57,8 @@ class env:
         self.sim.data.set_joint_qpos("bot_2", pos2+[2]+ori2)
         self.qpos_1 = self.sim.data.get_joint_qpos("bot_1")
         self.qpos_2 = self.sim.data.get_joint_qpos("bot_2")
+        self.qvel_1 = self.sim.data.get_joint_qvel("bot_1")
+        self.qvel_2 = self.sim.data.get_joint_qvel("bot_2")
         return
 
     def evaluate(self):
@@ -58,35 +66,46 @@ class env:
             return 10
         else:
             return -1
-
+    def check_contact(self):
+        c1 = self.sim.data.sensordata[0] > 0
+        c2 = abs(self.qpos_1[1]-self.qpos_2[1])<0.255
+        c3 = (np.sum((self.qpos_1[-4:]-self.qpos_2[-4:]))<0.001)
+        c4 = (np.sum(self.qpos_1[:3]-self.qpos_2[:3])<0.26)
+        return c1*c2*c3*c4
     def step(self, action):
         t = 0
-        contact = 0
+        # contact = 0
         steps = self.ctrl_time_step/self.sim_time_step
         while t <= steps:
             self.sim.data.ctrl[:2] = action[:2]
             self.sim.data.ctrl[7:9] = action[2:4]
-            if self.sim.data.sensordata[0] > 0:
-                contact = 1
-            if contact:
+            if (self.check_contact()):
+                self.joined = 1
+            if self.joined:
                 self.join_action()
                 self.episode_state = 1
             else:
                 self.default_action()
             self.sim.step()
             t += 1
-        # self.view_front.append(self.sim.render(256,256,camera_name="camera_front_2"))
+        # self.view_front.append(self.sim.render(256,256,camera_name="camera_front_1"))
         # self.view_back.append(self.sim.render(256,256,camera_name="camera_back_2"))
+        if len(self.view_front)>5:
+            # del self.view_back[0]
+            del self.view_front[0]
+        
         self.time += self.ctrl_time_step
         self.qpos_1 = self.sim.data.get_joint_qpos("bot_1")
         self.qpos_2 = self.sim.data.get_joint_qpos("bot_2")
+        self.qvel_1 = self.sim.data.get_joint_qvel("bot_1")
+        self.qvel_2 = self.sim.data.get_joint_qvel("bot_2")
         out = self.evaluate()        
         return out
-    
+
     def join_action(self):
-        ctrl = [-0.01,-0.01,-0.01,0.001,-0.001]
+        ctrl = [-0.003,-0.003,-0.005,0.01,-0.01]
         self.sim.data.ctrl[2:7]=ctrl
-        ctrl = [0.01,0.01,0.01,-0.001,0.001]
+        ctrl = [0.005,0.005,0.003,-0.01,0.01]
         self.sim.data.ctrl[9:14]=ctrl
         return 
 
@@ -95,5 +114,6 @@ class env:
         self.sim.data.ctrl[2:7]=ctrl
         ctrl = [0.01,0.01,-0.01,-0.001,0.001]
         self.sim.data.ctrl[9:14]=ctrl
+        
         return
     
