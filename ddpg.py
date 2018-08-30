@@ -18,6 +18,28 @@ from OU import OU
 import timeit
 
 OU = OU()       #Ornstein-Uhlenbeck Process
+def reorder(x,ind):
+    qpos_1 = []
+    qpos_2 = []
+    qvel_1 = []
+    qvel_2 = []
+    img = []
+    for j in x:
+        i = j[ind]
+        qpos_1.append(i[0])
+        qpos_2.append(i[1])
+        qvel_1.append(i[2])
+        qvel_2.append(i[3])
+        img.append(i[4])
+
+        # out.append(i[ind])
+    out = [np.asanyarray(qpos_1),np.asanyarray(qpos_2),np.asarray(qvel_1),np.asarray(qvel_2),np.asarray(img)]
+    for i in range(len(out)):
+        out[i]=np.squeeze(out[i],axis=1)
+        # print (out[i].shape)
+    return out
+
+            
 
 def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
     BUFFER_SIZE = 100000
@@ -36,7 +58,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
 
     EXPLORE = 100000.
     episode_count = 20000
-    max_steps = 10000    
+    max_steps = 6000    
     reward = 0
     done = False
     step = 0
@@ -57,7 +79,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
 
     # Generate a Torcs environment
     # env = TorcsEnv(vision=vision, throttle=True,gear_change=False)
-    envn = dcmr.env("./xmls/two_modules.xml", 0.0001, 0.0001, 60)
+    envn = dcmr.env("./xmls/two_modules.xml", 0.0001, 0.01, 60)
 
     #Now load the weight
     print("Now we load the weight")
@@ -81,7 +103,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
         #     ob = env.reset(relaunch=True)   #relaunch TORCS every 3 episode because of the memory leak error
         # else:
         envn.reset()
-        for i in range(10):
+        for jack in range(10):
             envn.step([0,0,0,0])
 
         # s_t = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY,  ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
@@ -97,6 +119,8 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             noise_t[0][0] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0],  0.0 , 0.60, 0.30)
             noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.5 , 1.00, 0.10)
             noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1 , 1.00, 0.05)
+            noise_t[0][3] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1 , 1.00, 0.05)
+
 
             #The following code do the stochastic brake
             #if random.random() <= 0.1:
@@ -106,6 +130,8 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             a_t[0][0] = a_t_original[0][0] + noise_t[0][0]
             a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
             a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
+            a_t[0][3] = a_t_original[0][2] + noise_t[0][2]
+
 
             # ob, r_t, done, info = 
             r_t,done = envn.step(a_t[0])
@@ -119,14 +145,16 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
 
             # check this part
             batch = buff.getBatch(BATCH_SIZE)
-            states = np.asarray([e[0] for e in batch])
+            # states = np.asarray([e[0] for e in batch])
+            states = reorder(batch,0)
             actions = np.asarray([e[1] for e in batch])
             rewards = np.asarray([e[2] for e in batch])
-            new_states = np.asarray([e[3] for e in batch])
+            # new_states = np.asarray([e[3] for e in batch])
+            new_states = reorder(batch,3)
             dones = np.asarray([e[4] for e in batch])
             y_t = np.asarray([e[1] for e in batch])
 
-            target_q_values = critic.target_model.predict([new_states, actor.target_model.predict(new_states)])  
+            target_q_values = critic.target_model.predict(new_states+ [actor.target_model.predict(new_states)])  
            
             for k in range(len(batch)):
                 if dones[k]:
@@ -135,7 +163,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
                     y_t[k] = rewards[k] + GAMMA*target_q_values[k]
        
             if (train_indicator):
-                loss += critic.model.train_on_batch([states,actions], y_t) 
+                loss += critic.model.train_on_batch(states+[actions], y_t) 
                 a_for_grad = actor.model.predict(states)
                 grads = critic.gradients(states, a_for_grad)
                 actor.train(states, grads)
@@ -166,7 +194,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
         print("Total Step: " + str(step))
         print("")
 
-    env.end()  # This is for shutting down TORCS
+    # env.end()  # This is for shutting down TORCS
     print("Finish.")
 
 if __name__ == "__main__":

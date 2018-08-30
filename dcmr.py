@@ -69,7 +69,7 @@ class env:
     def check_contact(self):
         c1 = self.sim.data.sensordata[0] >= 0
         c2 = ((self.qpos_1[1]-self.qpos_2[1])<0.255)*((self.qpos_1[1]-self.qpos_2[1])>0)
-        c3 = (np.sum((self.qpos_1[-4:]-self.qpos_2[-4:]))<0.001)
+        c3 = (np.sum((self.qpos_1[-4:]-self.qpos_2[-4:]))<0.01)
         c4 = (np.sum(self.qpos_1[:3]-self.qpos_2[:3])<0.26)
         return c1*c2*c3*c4*(self.joined==0)
     def step(self, action):

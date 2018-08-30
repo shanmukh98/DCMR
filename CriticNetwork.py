@@ -34,15 +34,16 @@ class CriticNetwork(object):
         self.sess.run(tf.initialize_all_variables())
 
     def gradients(self, states, actions):
-        return self.sess.run(self.action_grads, feed_dict={
-            self.state: states,
-            self.action: actions
-        })[0]
+        s={}
+        for i in range(len(self.state)):
+            s[self.state[i]]=states[i]
+        s[self.action] = actions
+        return self.sess.run(self.action_grads, feed_dict=s)[0]
 
     def target_train(self):
         critic_weights = self.model.get_weights()
         critic_target_weights = self.target_model.get_weights()
-        for i in xrange(len(critic_weights)):
+        for i in range(len(critic_weights)):
             critic_target_weights[i] = self.TAU * critic_weights[i] + \
                 (1 - self.TAU) * critic_target_weights[i]
         self.target_model.set_weights(critic_target_weights)
@@ -118,4 +119,6 @@ class CriticNetwork(object):
         # Brake = Dense(1,activation='sigmoid',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1) 
         # V = merge([Steering,Acceleration,Brake],mode='concat')          
         model = Model(inputs=imp+[act],output=x)
+        adam = Adam(lr=self.LEARNING_RATE)
+        model.compile(loss='mse', optimizer=adam)
         return model, act, imp
