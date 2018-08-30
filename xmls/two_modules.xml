@@ -12,14 +12,14 @@
     <size nconmax="200" njmax="1000"/>
 
     <default>
-        <!-- <geom solimp="4 3 0.001" /> -->
+        <!-- <geom solimp="0.99 0.99 0" /> -->
         <!-- <joint limited="true" range="0 3.14"/> -->
     </default>
     <visual>
         <map znear="0.055" zfar="20"/>
         <quality offsamples="8"/>
     </visual>
-    <option timestep="0.0001" impratio="10000" />
+    <option timestep="0.0001" impratio="500" />
 
     <worldbody>
 
@@ -95,10 +95,10 @@
                 <body name="socket_1">
                     <!-- <geom type="mesh" mesh="joint_socket" pos="0 0.22 0.08"></geom> -->
                     <geom type="box" pos="0 0.22 0.064" size="0.125 0.005 0.014"></geom>
-                    <geom type="box" pos="0.091 0.22 0.089" size="0.034 0.005 0.011"></geom>
-                    <geom type="box" pos="0 0.22 0.089" size="0.034 0.005 0.011"></geom>
-                    <geom type="box" pos="-0.091 0.22 0.089" size="0.034 0.005 0.011"></geom>
-                    <geom type="box" pos="0 0.22 0.114" size="0.125 0.005 0.014"></geom>
+                    <geom type="box" pos="0.091 0.22 0.092" size="0.034 0.005 0.014"></geom>
+                    <geom type="box" pos="0 0.22 0.092" size="0.034 0.005 0.014"></geom>
+                    <geom type="box" pos="-0.091 0.22 0.092" size="0.034 0.005 0.014"></geom>
+                    <geom type="box" pos="0 0.22 0.12" size="0.125 0.005 0.014"></geom>
                 </body>
                 <!-- <body name="joint_bc_1">
                     <geom type="box" pos="0 0.215 0.06" size="0.01 0.01 0.01"/>
@@ -167,6 +167,7 @@
                     <joint name="plug_left_2" type="hinge" axis="0 0 1" pos="0.0455 -0.045 0.089" limited="true" range="0 90" />
                     <geom type="capsule" size="0.01" fromto="0.0455 -0.0651 0.089 0.0455 -0.07 0.089" />
                 </body>
+                <geom type="box" size="0.1 0.005 0.0391" pos="0 -0.024 0.089"></geom>
                 <geom type="capsule" size="0.0105" fromto="-0.0455 -0.01 0.089 -0.0455 -0.045 0.089" />
                 <body name="right_plug_2">
                     <joint name="plug_right_2" type="hinge" axis="0 0 1" pos="-0.0455 -0.045 0.089" limited="true" range="-90 0" />
@@ -203,7 +204,7 @@
                 <geom type="box" pos="-0.083 0.1 0.05" size="0.04 0.025 0.001"/>
                 <geom type="box" pos="0 0.175 0.05" size="0.125 0.05 0.001"/>
 
-                <site name="contact_sensor_1" type="box" pos="0 0.22 0.089" size="0.125 0.028 0.042" rgba="1 1 0 0.25"/>
+                <site name="contact_sensor_1" type="box" pos="0 0.22 0.089" size="0.125 0.06 0.043" rgba="1 1 0 0.25"/>
 
                 <body name="socket_2">
                     <!-- <geom type="mesh" mesh="joint_socket" pos="0 0.22 0.08"></geom> -->

@@ -67,11 +67,11 @@ class env:
         else:
             return -1
     def check_contact(self):
-        c1 = self.sim.data.sensordata[0] > 0
-        c2 = abs(self.qpos_1[1]-self.qpos_2[1])<0.255
+        c1 = self.sim.data.sensordata[0] >= 0
+        c2 = ((self.qpos_1[1]-self.qpos_2[1])<0.255)*((self.qpos_1[1]-self.qpos_2[1])>0)
         c3 = (np.sum((self.qpos_1[-4:]-self.qpos_2[-4:]))<0.001)
         c4 = (np.sum(self.qpos_1[:3]-self.qpos_2[:3])<0.26)
-        return c1*c2*c3*c4
+        return c1*c2*c3*c4*(self.joined==0)
     def step(self, action):
         t = 0
         # contact = 0
@@ -79,7 +79,7 @@ class env:
         while t <= steps:
             self.sim.data.ctrl[:2] = action[:2]
             self.sim.data.ctrl[7:9] = action[2:4]
-            if (self.check_contact()):
+            if ((self.check_contact())):
                 self.joined = 1
             if self.joined:
                 self.join_action()
