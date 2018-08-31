@@ -95,7 +95,7 @@ class ActorNetwork(object):
         x = concatenate([img,state])
         x = BatchNormalization()(x)
         x = Dense(128 , activation="elu")(x)
-        x = Dense(4,activation="linear")(x)
+        x = Dense(4,activation="tanh")(x)
 
 
 

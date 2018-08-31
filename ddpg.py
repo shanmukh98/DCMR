@@ -58,7 +58,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
 
     EXPLORE = 100000.
     episode_count = 20000
-    max_steps = 6000    
+    max_steps = 1000    
     reward = 0
     done = False
     step = 0
@@ -115,11 +115,11 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             a_t = np.zeros([1,action_dim])
             noise_t = np.zeros([1,action_dim])
             
-            a_t_original = actor.model.predict(s_t)
-            noise_t[0][0] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0],  0.0 , 0.60, 0.30)
-            noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.5 , 1.00, 0.10)
-            noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1 , 1.00, 0.05)
-            noise_t[0][3] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1 , 1.00, 0.05)
+            a_t_original = actor.model.predict(s_t) * 10
+            noise_t[0][0] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0], 0.2 , 1.00, 0.05)
+            noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1], 0.2 , 1.00, 0.05)
+            noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.2 , 1.00, 0.05)
+            noise_t[0][3] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][3], -0.2 , 1.00, 0.05)
 
 
             #The following code do the stochastic brake
@@ -130,7 +130,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             a_t[0][0] = a_t_original[0][0] + noise_t[0][0]
             a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
             a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
-            a_t[0][3] = a_t_original[0][2] + noise_t[0][2]
+            a_t[0][3] = a_t_original[0][3] + noise_t[0][3]
 
 
             # ob, r_t, done, info = 
@@ -164,7 +164,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
        
             if (train_indicator):
                 loss += critic.model.train_on_batch(states+[actions], y_t) 
-                a_for_grad = actor.model.predict(states)
+                a_for_grad = actor.model.predict(states) * 10
                 grads = critic.gradients(states, a_for_grad)
                 actor.train(states, grads)
                 actor.target_train()
@@ -173,7 +173,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             total_reward += r_t
             s_t = s_t1
         
-            print("Episode", i, "Step", step, "Action", a_t, "Reward", r_t, "Loss", loss)
+            print("Episode", i, "Step", step, "Action", a_t,"pos",(envn.qpos_1-envn.qpos_2), "Reward", r_t, "Loss", loss)
         
             step += 1
             if done:

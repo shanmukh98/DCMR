@@ -61,11 +61,19 @@ class env:
         self.qvel_2 = self.sim.data.get_joint_qvel("bot_2")
         return
 
-    def evaluate(self):
+    def evaluate(self,action):
+        if (abs(self.qpos_1) > 5).any() or (abs(self.qpos_2)>5).any():
+            return -10
+        if (abs(np.array(action)) > 100).any():
+            # return  -np.max(abs(np.array(action)))
+            return -10
         if self.episode_state == 1:
             return 10
         else:
-            return -1
+            reward = -np.mean(abs(self.qpos_1[0:3] - self.qpos_2[0:3]))-np.mean(abs(self.qpos_1[1] - self.qpos_2[1]))-np.mean(abs(self.qpos_1[:] - self.qpos_2[:]))
+            return reward
+            # return -1
+        
     def check_contact(self):
         c1 = self.sim.data.sensordata[0] >= 0
         c2 = ((self.qpos_1[1]-self.qpos_2[1])<0.255)*((self.qpos_1[1]-self.qpos_2[1])>0)
@@ -77,6 +85,7 @@ class env:
         # contact = 0
         steps = self.ctrl_time_step/self.sim_time_step
         while t <= steps:
+
             self.sim.data.ctrl[:2] = action[:2]
             self.sim.data.ctrl[7:9] = action[2:4]
             if ((self.check_contact())):
@@ -99,7 +108,7 @@ class env:
         self.qpos_2 = self.sim.data.get_joint_qpos("bot_2")
         self.qvel_1 = self.sim.data.get_joint_qvel("bot_1")
         self.qvel_2 = self.sim.data.get_joint_qvel("bot_2")
-        out = self.evaluate()        
+        out = self.evaluate(action)        
         return out,self.joined
 
     def join_action(self):

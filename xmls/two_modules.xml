@@ -250,15 +250,15 @@
     <actuator>
         <!-- <motor joint="LW1"/>
         <motor joint="RW1"/> -->
-        <velocity joint="LW1"/>
-        <velocity joint="RW1"/>
+        <velocity joint="LW1" ctrllimited="true" ctrlrange="-10 10"/>
+        <velocity joint="RW1" ctrllimited="true" ctrlrange="-10 10"/>
         <motor joint="support_fr_1"/>
         <motor joint="support_fl_1"/>
         <motor joint="support_b_1"/>
         <motor joint="plug_left_1"/>
         <motor joint="plug_right_1"/>
-        <velocity joint="LW2"/>
-        <velocity joint="RW2"/>
+        <velocity joint="LW2" ctrllimited="true" ctrlrange="-10 10"/>
+        <velocity joint="RW2" ctrllimited="true" ctrlrange="-10 10"/>
         <motor joint="support_fr_2"/>
         <motor joint="support_fl_2"/>
         <motor joint="support_b_2"/>
